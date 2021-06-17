@@ -1,4 +1,4 @@
-FROM code-challenge-2020-master
+FROM code-challenge/build_base
 
 COPY . /opt/clean_data/
 
