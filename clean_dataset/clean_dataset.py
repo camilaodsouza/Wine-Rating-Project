@@ -21,7 +21,7 @@ def clean_dataset(in_csv, out_dir):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     
-    df = pd.read_csv('wine_dataset.csv')
+    df = pd.read_csv(in_csv)
     
     # drop irrelevant columns 
     df = df.drop(columns = ['Unnamed: 0', 'designation', 'region_2', 'taster_twitter_handle', 'winery'])
