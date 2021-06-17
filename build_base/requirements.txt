@@ -1,0 +1,4 @@
+pandas==1.2.4
+vaderSentiment==3.3.2
+click>=7.0
+category_encoders==2.2.2
