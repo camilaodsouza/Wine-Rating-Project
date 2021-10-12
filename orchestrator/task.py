@@ -56,9 +56,10 @@ class DownloadData(DockerTask):
 
 class CleanDataSet(DockerTask):
 
+
     in_csv = luigi.Parameter(default='/usr/share/data/raw/wine_dataset.csv')
     out_dir = luigi.Parameter(default='/usr/share/data/interim/')
-    flag = luigi.Parameter('.SUCCESS_CleanDataset')
+    #flag = luigi.Parameter('.SUCCESS_CleanDataset')
 
     @property
     def image(self):
@@ -75,27 +76,27 @@ class CleanDataSet(DockerTask):
             'python', 'clean_dataset.py',
             '--in-csv', self.in_csv,
             '--out-dir', self.out_dir,
-            '--flag', self.flag
+            #'--flag', self.flag
         ]
 
     def output(self):
         return luigi.LocalTarget(
-            path=str(Path(self.out_dir) / self.flag)
+            path=str(Path(self.out_dir) / '.SUCCESS')
         )
 
 
-class MakeDatasets(DockerTask):
+class MakeDataset(DockerTask):
 
-    in_csv = luigi.Parameter(default='/usr/share/data/raw/wine_dataset.csv')
-    out_dir = luigi.Parameter(default='/usr/share/data/interim/')
-    flag = luigi.Parameter('.SUCCESS_MakeDatasets')
+    in_csv = luigi.Parameter(default='/usr/share/data/interim/clean.csv')
+    out_dir = luigi.Parameter(default='/usr/share/data/partition/')
+    #flag = luigi.Parameter('.SUCCESS_MakeDatasets')
 
     @property
     def image(self):
         return f'code-challenge/make-dataset:{VERSION}'
 
     def requires(self):
-        return DownloadData()
+        return CleanDataSet()
 
     @property
     def command(self):
@@ -105,10 +106,70 @@ class MakeDatasets(DockerTask):
             'python', 'make_dataset.py',
             '--in-csv', self.in_csv,
             '--out-dir', self.out_dir,
-            '--flag', self.flag
+            #'--flag', self.flag
         ]
 
     def output(self):
         return luigi.LocalTarget(
-            path=str(Path(self.out_dir) / self.flag)
+            path=str(Path(self.out_dir) / '.SUCCESS')
+        )
+
+class TrainModel(DockerTask):
+
+    train_csv = luigi.Parameter(default='/usr/share/data/partition/train.csv')
+    out_dir = luigi.Parameter(default='/usr/share/data/model/')
+    #flag = luigi.Parameter('.SUCCESS_MakeDatasets')
+
+    @property
+    def image(self):
+        return f'code-challenge/train_model:{VERSION}'
+
+    def requires(self):
+        return MakeDataset()
+
+    @property
+    def command(self):
+        # TODO: implement correct command
+        # Try to get the input path from self.requires() ;)
+        return [
+            'python', 'train_model.py',
+            '--train-csv', self.train_csv,
+            '--out-dir', self.out_dir,
+            #'--flag', self.flag
+        ]
+
+    def output(self):
+        return luigi.LocalTarget(
+            path=str(Path(self.out_dir) / '.SUCCESS')
+        )
+
+class EvaluateModel(DockerTask):
+
+    in_model = luigi.Parameter(default='/usr/share/data/model/trained_model.sav')
+    test_csv = luigi.Parameter(default='/usr/share/data/partition/test.csv')
+    out_dir = luigi.Parameter(default='/usr/share/data/output/')
+    #flag = luigi.Parameter('.SUCCESS_MakeDatasets')
+
+    @property
+    def image(self):
+        return f'code-challenge/evaluate_model:{VERSION}'
+
+    def requires(self):
+        return TrainModel()
+
+    @property
+    def command(self):
+        # TODO: implement correct command
+        # Try to get the input path from self.requires() ;)
+        return [
+            'python', 'evaluate_model.py',
+            '--in-model', self.in_model,
+            '--test-csv', self.test_csv,
+            '--out-dir', self.out_dir,
+            #'--flag', self.flag
+        ]
+
+    def output(self):
+        return luigi.LocalTarget(
+            path=str(Path(self.out_dir) / '.SUCCESS')
         )
