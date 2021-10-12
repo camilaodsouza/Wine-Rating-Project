@@ -7,6 +7,9 @@ then
 fi
 
 VERSION=$1
+docker build -t code-challenge/build-base build_base
 docker build -t code-challenge/download-data:$VERSION download_data
 docker build -t code-challenge/clean-dataset:$VERSION clean_dataset
 docker build -t code-challenge/make-dataset:$VERSION make_dataset
+docker build -t code-challenge/train_model:$VERSION train_model
+docker build -t code-challenge/evaluate_model:$VERSION evaluate_model
