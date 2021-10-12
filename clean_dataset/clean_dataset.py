@@ -2,6 +2,7 @@ import re
 import click
 import pandas as pd
 from pathlib import Path
+from datetime import date
 import category_encoders as ce
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
@@ -16,11 +17,15 @@ def _save_clean_dataset(clean_dataset, outdir: Path):
 
 def get_compound(description, analyzerObj):
     compound = analyzerObj.polarity_scores(description)['compound']
-    if (compound >= 0.0 and compound <= 1.0):
-        return compound
-    else:
-        return compound/1000
+    return compound
 
+def get_year(title):
+    if (re.search(r"(\d{4})", title)):
+        year = int(re.search(r"(\d{4})", title).group(1))
+        if (year <= date.today().year and year >= 1500):
+            return year
+    
+    return 0
 
 @click.command()
 @click.option('--in-csv')
@@ -36,22 +41,22 @@ def clean_dataset(in_csv, out_dir):
     # drop duplicates
     df = df.drop_duplicates(ignore_index=True)
     
-    # fill null values
-    df['price'].fillna(df['price'].median(), inplace=True)
-    df['region_1'].fillna(str(df['region_1'].mode()), inplace=True)
-    df['taster_name'].fillna(0, inplace=True)
-    
     # extract new features
     analyzerObj = SentimentIntensityAnalyzer()
     df['descLen'] = df['description'].map(lambda description: len(description))
     df['compound'] = df['description'].map(lambda description: get_compound(description, analyzerObj))
-    df['year'] = df['title'].map(lambda title: re.search(r"(\d{4})", title).group(1) if re.search(r"(\d{4})", title) else '0')
-    df['year'] = pd.to_numeric(df['year'])
-    median = df.loc[df['year']>0].median()[4]
-    df['year'].replace(0, median, inplace = True)
+    df['year'] = df['title'].map(lambda title: get_year(title))
+
+    # fill null values
+    df['price'].fillna(df['price'].median(), inplace=True)
+    df['country'].fillna(str(df['country'].mode()), inplace=True)
+    df['province'].fillna(str(df['province'].mode()), inplace=True)
+    df['region_1'].fillna(str(df['region_1'].mode()), inplace=True)
+    df['taster_name'].fillna(0, inplace=True)
+    df['year'].replace(0, df.loc[df['year']>0].median()['year'], inplace = True)
     
     # encoding categorical features
-    X = df.drop(columns=['points', 'description', 'title'])
+    X = df.drop(columns=['description', 'title'])
     y = df['points']
     ce_ord = ce.OrdinalEncoder(cols = ['country', 'province', 'region_1', 'taster_name', 'variety'])
     X_labeled = ce_ord.fit_transform(X, y)
