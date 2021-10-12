@@ -1,6 +1,5 @@
-FROM drtools/dask:latest
-COPY . /opt/make_dataset
+FROM code-challenge/build-base
 
-USER root
+COPY . /opt/make_dataset/
 
-WORKDIR /opt/make_dataset
+WORKDIR /opt/make_dataset/
